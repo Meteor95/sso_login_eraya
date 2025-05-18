@@ -1,7 +1,28 @@
-import { Elysia } from "elysia";
+import { Elysia, env } from 'elysia'
+import { cors } from '@elysiajs/cors'
+import { swagger } from '@elysiajs/swagger'
+import { authRoutes } from '@routes/auth-routes'
+import { accessJwt, refreshJwt } from '@middlewares/jwt_auth';
 
-const app = new Elysia().get("/", () => "Hello Elysia").listen(3000);
+// Buat konfigurasi CORS
+const corsConfig = cors({
+  origin: 'http://localhost:12202',
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH']
+})
 
-console.log(
-  `🦊 Elysia is running at ${app.server?.hostname}:${app.server?.port}`
-);
+// Inisialisasi app
+const app = new Elysia()
+  .use(swagger()) 
+  .use(corsConfig)
+  .group('/api/v1', (app) =>
+    app.use(authRoutes)
+  )
+
+
+
+// Menyalakan server dan log hostname/port
+app.listen(env.PORT ?? 3000, ({ hostname, port }) => {
+  console.log(`🦊 Elysia is running at http://${hostname}:${port}`)
+})

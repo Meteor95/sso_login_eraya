@@ -98,6 +98,16 @@
 
     /* Completeness */
     // "skipDefaultLibCheck": true,                      /* Skip type checking .d.ts files that are included with TypeScript. */
-    "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */
+    "skipLibCheck": true,                                 /* Skip type checking all .d.ts files. */
+    "baseUrl": ".",
+    "paths": {
+      "@services/*": ["src/services/*"],
+      "@helpers/*": ["src/helpers/*"],
+      "@database/*": ["src/databases/*"],
+      "@controllers/*": ["src/controllers/*"],
+      "@routes/*": ["src/routes/*"],
+      "@middlewares/*": ["src/middlewares/*"],
+    },
+    "allowSyntheticDefaultImports": true,
   }
 }
