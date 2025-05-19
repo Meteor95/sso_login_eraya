@@ -2,17 +2,25 @@ import { Elysia } from 'elysia';
 import { jwt } from '@elysiajs/jwt';
 import { parse } from 'cookie';
 
-export const accessJwt = jwt({
+const accessJwtPlugin = jwt({
   name: 'accessJwt',
   secret: process.env.JWT_SECRET ?? 'No Secret',
   exp: '15m',
 });
 
-export const refreshJwt = jwt({
+const refreshJwtPlugin = jwt({
   name: 'refreshJwt',
   secret: process.env.JWT_SECRET ?? 'No Secret',
   exp: '30d',
 });
+
+// Ini akan jadi plugin yang dipakai oleh Elysia
+export const accessJwt = accessJwtPlugin;
+export const refreshJwt = refreshJwtPlugin;
+
+// Tambahkan akses langsung ke sign function
+export const accessJwtInstance = await accessJwtPlugin.setup?.({});
+export const refreshJwtInstance = await refreshJwtPlugin.setup?.({});
 
 export const authWithRefresh = new Elysia()
   .use(accessJwt)

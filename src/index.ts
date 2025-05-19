@@ -2,7 +2,6 @@ import { Elysia, env } from 'elysia'
 import { cors } from '@elysiajs/cors'
 import { swagger } from '@elysiajs/swagger'
 import { authRoutes } from '@routes/auth-routes'
-import { accessJwt, refreshJwt } from '@middlewares/jwt_auth';
 
 // Buat konfigurasi CORS
 const corsConfig = cors({

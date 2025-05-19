@@ -2,6 +2,7 @@ import { db } from "@database/connection";
 import { sso_users, sso_services, sso_users_login  } from "@database/schema";
 import { eq, or, and, isNull, sql } from "drizzle-orm";
 import redisHelper from "@helpers/redisHelper";
+import { accessJwtInstance, refreshJwtInstance } from '@middlewares/jwt_auth';
 
 export class AuthService {
     
@@ -30,7 +31,7 @@ export class AuthService {
     
         const isMatch = await Bun.password.verify(data.password, resultUser[0].password)
         if (!isMatch) return 0
-    
+
         const user = resultUser[0]
         const hasLoggedInBefore = await db
           .select({ count: sql<number>`COUNT(*)` })
@@ -42,26 +43,33 @@ export class AuthService {
             )
           )
           .limit(1)
-    
+
         let accessToken: string
         let refreshToken: string
-    
-        if (hasLoggedInBefore[0].count === 0) {
-          const loginCount = await db
-            .select({ count: sql<number>`COUNT(*)` })
-            .from(sso_users_login)
-            .where(eq(sso_users_login.user_id, user.id))
-    
-          if (loginCount[0].count >= user.max_allowed_login) return -1
-    
+        
+        if (hasLoggedInBefore[0].count == 0) {
+          
+          if (hasLoggedInBefore[0].count >= user.max_allowed_login) return -1
+          
           await trx.insert(sso_users_login).values({
             user_id: user.id,
             deviced_id: data.fingerprint,
             created_at: new Date(),
           });
-    
-          // await redisHelper.set(`accessToken:${user.uuid}`, { token: accessToken }, 60 * 60 * 24 * 7)
-          // await redisHelper.set(`refreshToken:${user.uuid}`, { refresh_token: refreshToken }, 60 * 60 * 24 * 30)
+          accessToken = await accessJwtInstance.sign({
+            id: user.id,
+            username: user.username,
+            type: 'access',
+          });
+
+          refreshToken = await refreshJwtInstance.sign({
+            id: user.id,
+            username: user.username,
+            type: 'refresh',
+          });
+          
+          await redisHelper.set(`accessToken:${user.uuid}`, { token: accessToken }, 60 * 60 * 24 * 7)
+          await redisHelper.set(`refreshToken:${user.uuid}`, { refresh_token: refreshToken }, 60 * 60 * 24 * 30)
         } else {
           const session = await redisHelper.get<{ token: string }>(`accessToken:${user.uuid}`)
           const refreshSession = await redisHelper.get<{ refresh_token: string }>(`refreshToken:${user.uuid}`)
@@ -82,8 +90,8 @@ export class AuthService {
         return {
           uuid: user.uuid,
           username: user.username,
-          // token: accessToken,
-          // refresh_token: refreshToken,
+          token: accessToken,
+          refresh_token: refreshToken,
           service: resultService,
         }
       })
